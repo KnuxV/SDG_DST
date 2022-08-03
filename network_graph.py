@@ -5,6 +5,7 @@ functions to create network graph on maps with plotly depending on a dataframe.
 import os
 from typing import Tuple, Any
 
+import networkx as nx
 import pandas as pd
 import plotly.graph_objects as go
 from itertools import combinations
@@ -352,5 +353,123 @@ def draw_network_map(dataframe, map_filter="World", save=False,
         #     df_edges.to_pickle(folder + name + "_df_edges.pkl")
 
 
+def draw_network_graph(dataframe, map_filter, save=False, folder="img/Commission/network/", name="amm",
+                       max_num_actors=20):
+    df_mentions = actors_mention(
+        dataframe=dataframe, map_filter=map_filter, max_num_actors=max_num_actors
+    )
+
+    print("df_mentions ok")
+    df_edges, max_total_edge = \
+        actors_edge(dataframe=dataframe, dataframe_mentions=df_mentions, map_filter=map_filter)
+    print("df_edge_ok")
+
+    # Networkx
+    g = nx.Graph()
+    nodesize_raw_numbers = []
+    for ind, row in df_mentions.iterrows():
+        g.add_node(row["Country"])
+        nodesize_raw_numbers.append(row.total_mention)
+    maxi_node = max(nodesize_raw_numbers)
+    node_size = [100 * node / maxi_node for node in nodesize_raw_numbers]
+    for ind, row in df_edges.iterrows():
+        c1 = row["c1"]
+        c2 = row["c2"]
+        count = row["edge"]
+        g.add_edge(c1, c2, weight=count)
+
+    pos = nx.spring_layout(g, k=0.2, iterations=1000)
+    edges = g.edges()
+    w = [g[u][v]['weight'] for u, v in edges]
+    maxi = max(w) if len(w) > 0 else 0
+
+    for node in g.nodes:
+        g.nodes[node]['pos'] = list(pos[node])
+
+    # Edges = Lines logic
+    edge_trace = []
+    for ind, edge in enumerate(g.edges()):
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        weight = 6 * (g[edge[0]][edge[1]]["weight"]) / maxi
+
+        # Line logic
+        trace = go.Scatter(
+            x=[x0, x1, None], y=[y0, y1, None],
+            line=dict(width=weight, color='rgb(231,133,135)'),
+            mode='lines')
+        edge_trace.append(trace)
+    # Nodes logic
+    node_x = []
+    node_y = []
+    node_name = []
+    for node in g.nodes():
+        x, y = pos[node]
+        node_x.append(x)
+        node_y.append(y)
+        node_name.append(str(node))
+
+        node_trace = go.Scatter(
+            x=node_x, y=node_y,
+            mode='markers+text',
+            hovertext=node_size,
+            # hoverinfo='',
+            text=node_name,
+            textposition="bottom center",
+            marker=dict(
+                showscale=True,
+                # colorscale options
+                # 'Greys' | 'YlGnBu' | 'Greens' | 'YlOrRd' | 'Bluered' | 'RdBu' |
+                # 'Reds' | 'Blues' | 'Picnic' | 'Rainbow' | 'Portland' | 'Jet' |
+                # 'Hot' | 'Blackbody' | 'Earth' | 'Electric' | 'Viridis' |
+                colorscale='YlGnBu',
+                reversescale=True,
+                color=[],
+                size=node_size,
+                colorbar=dict(
+                    thickness=15,
+                    title='Number of publications',
+                    xanchor='left',
+                    titleside='right'
+                ),
+                line_width=2))
+
+    node_adjacencies = []
+    node_text = []
+    for node, adjacencies in enumerate(g.adjacency()):
+        node_adjacencies.append(len(adjacencies[1]))
+        node_text.append('# of connections: ' + str(len(adjacencies[1])))
+
+    node_trace.marker.color = nodesize_raw_numbers
+
+    edge_trace.append(node_trace)
+
+    fig = go.Figure(data=edge_trace,
+                    layout=go.Layout(
+                        title=f'collaborations between countries based on <b>{name.split("_")[0]}</b> publications',
+                        titlefont_size=16,
+                        showlegend=False,
+                        hovermode='closest',
+                        margin=dict(b=20, l=5, r=5, t=40),
+                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                    )
+    fig.update_traces(textposition='top center', textfont=dict(family='sans-serif', size=17, color='#000'))
+    fig.update_layout(template='ggplot2')
+    if save:
+        fig.write_image(folder + name + ".jpeg", width=1900, height=800)
+    fig.show()
+
+
 if __name__ == "__main__":
-    pass
+    df_sdg = pd.read_pickle("data/dataframes/SDG/all_sdg_fixed_dst.pkl")
+    df_digital = pd.read_pickle("data/dataframes/digital/all_digital.pkl")
+
+    draw_network_graph(dataframe=df_sdg, map_filter='World', save=True, name="SDG_world")
+    # draw_network_graph(dataframe=df_sdg, map_filter='Europe', save=True, name="SDG_EU")
+    #
+    # draw_network_graph(dataframe=df_digital, map_filter='World', save=True, name="DT_world")
+    # draw_network_graph(dataframe=df_digital, map_filter='Europe', save=True, name="DT_EU")
+    #
+    # draw_network_graph(dataframe=df_sdg[df_sdg['DST']], map_filter='World', save=True, name="SDG-DT_world")
+    # draw_network_graph(dataframe=df_sdg[df_sdg['DST']], map_filter='Europe', save=True, name="SDG-DT_EU")

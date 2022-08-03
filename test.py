@@ -1,7 +1,9 @@
-import pandas as pd
+CU = ("Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Denmark",
+              "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Ireland", "Italy",
+              "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland",
+              "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden""Iceland", "Liechtenstein", "Norway", "Switzerland", "United Kingdom")
 
-from utils import filter_for_eu_countries
-
-df_after = pd.read_pickle('data/dataframes/digital/digital_1975-2022.pkl')
-df_tot = filter_for_eu_countries(df_after, how='add')
-df_tot.to_pickle('data/dataframes/digital/digital_1975-2022.pkl')
+# CU = CU.replace(", ", " OR ")
+CU = list(CU)
+str_cu = " OR ".join(CU)
+print(str_cu)

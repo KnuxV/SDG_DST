@@ -8,6 +8,7 @@ from collections import Counter, defaultdict
 from pretty_html_table import build_table
 
 df = pd.read_pickle("data/output/all_sdg_fixed_dst.pkl")
+df_digital = pd.read_pickle("data/dataframes/digital/all_digital.pkl")
 df_eu_countries = pd.read_excel("data/countries_eu.xlsx", sheet_name=0, index_col=0)
 df_continent = pd.read_excel("data/continents.xls", sheet_name=0)
 
@@ -16,7 +17,7 @@ dic_country_continent = dict(zip(df_country_w_continent.Country, df_country_w_co
 
 # Filtered database
 df_eu = df[df["EU"]]
-df_dst = df[df['DST']]
+df_dst = df_digital
 df_eu_dst = df_eu[df_eu['DST']]
 
 # list EU countries
@@ -103,7 +104,7 @@ def count_publications(dataframe: pd.DataFrame, filter1: str, filter2: str, name
 
     # Save to html file
     if save:
-        with open('/home/kevin-work/PycharmProjects/SDG_DST/img/' + str(name) + '.html', 'w') as f:
+        with open('/home/kevin/PycharmProjects/SDG_DST/img/Commission/Specialization/' + str(name) + '.html', 'w') as f:
             f.write(html_table_blue_light)
     return df_spe
 
@@ -111,7 +112,7 @@ def count_publications(dataframe: pd.DataFrame, filter1: str, filter2: str, name
 if __name__ == "__main__":
     # count_publications(df_eu, filter1="eu", filter2="sdg", name="test", save=True)
     # count_publications(df_eu_dst, filter1="eu", filter2="dst", name="eu_dst", save=True)
-    count_publications(df_dst, filter1="continent", filter2="dst", name="continent_dst", save=True)
+    count_publications(df_dst, filter1="eu", filter2="dst", name="dst", save=True)
     # count_publications(df, filter1="continent", filter2="sdg", name="continent_sdg", save=True)
 
 
